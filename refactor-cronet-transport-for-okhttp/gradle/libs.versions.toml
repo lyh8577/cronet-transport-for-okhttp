@@ -1,0 +1,32 @@
+[versions]
+agp = "9.1.1"
+
+androidx-annotation="1.9.1"
+
+cronet = "143.7445.0"
+cronet-okhttp = "0.1.1"
+play-services-cronet = "18.1.1"
+guava = "31.1-android"
+jsr305 = "3.0.2"
+
+okhttp = "3.12.13"
+okio = "2.10.0"
+
+[libraries]
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
+
+cronet-api = { module = "org.chromium.net:cronet-api", version.ref = "cronet" }
+cronet-embedded = { module = "org.chromium.net:cronet-embedded", version.ref = "cronet" }
+
+cronet-okhttp = { module = "com.google.net.cronet:cronet-okhttp", version.ref = "cronet-okhttp" }
+play-services-cronet = { module = "com.google.android.gms:play-services-cronet", version.ref = "play-services-cronet" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "jsr305" }
+
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+
