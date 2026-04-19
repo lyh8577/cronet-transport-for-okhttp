@@ -36,4 +36,6 @@ dependencies {
     implementation(libs.play.services.cronet)
     implementation(libs.okhttp)
     implementation(libs.guava)
+    implementation(libs.jsr305)
+    implementation(libs.cronet.api)
 }

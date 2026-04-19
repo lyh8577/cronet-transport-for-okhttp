@@ -1,16 +1,16 @@
 [versions]
 agp = "9.1.1"
 
-androidx-annotation="1.9.1"
+androidx-annotation="1.10.0"
 
 cronet = "143.7445.0"
 cronet-okhttp = "0.1.1"
 play-services-cronet = "18.1.1"
-guava = "31.1-android"
+guava = "33.6.0-android"
 jsr305 = "3.0.2"
 
-okhttp = "3.12.13"
-okio = "2.10.0"
+okhttp = "5.3.2"
+okio = "3.17.0"
 
 [libraries]
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
