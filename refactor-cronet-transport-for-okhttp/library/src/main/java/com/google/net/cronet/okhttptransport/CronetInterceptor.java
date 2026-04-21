@@ -17,25 +17,24 @@
 package com.google.net.cronet.okhttptransport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import android.util.Log;
+import androidx.annotation.NonNull;
+
 import com.google.net.cronet.okhttptransport.RequestResponseConverter.CronetRequestAndOkHttpResponse;
+
+import org.chromium.net.CronetEngine;
+import org.chromium.net.UrlRequest;
+
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+
 import okhttp3.Call;
+import okhttp3.EventListener;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import org.chromium.net.CronetEngine;
-import org.chromium.net.UrlRequest;
 
 /**
  * An OkHttp interceptor that redirects HTTP traffic to use Cronet instead of using the OkHttp
@@ -54,116 +53,130 @@ import org.chromium.net.UrlRequest;
  *       OkHttp's architecture. TODO(danstahr): add a concrete list).
  * </ol>
  */
-public final class CronetInterceptor implements Interceptor, AutoCloseable {
-  private static final String TAG = "CronetInterceptor";
+public final class CronetInterceptor extends EventListener implements Interceptor/*, AutoCloseable*/ {
+    private static final String TAG = "CronetInterceptor";
 
-  private static final int CANCELLATION_CHECK_INTERVAL_MILLIS = 500;
+//    private static final int CANCELLATION_CHECK_INTERVAL_MILLIS = 500;
 
-  private final RequestResponseConverter converter;
-  private final Map<Call, UrlRequest> activeCalls = new ConcurrentHashMap<>();
-  private final ScheduledExecutorService scheduledExecutor = new ScheduledThreadPoolExecutor(1);
+    private final RequestResponseConverter converter;
+    private final Map<Call, UrlRequest> activeCalls = new ConcurrentHashMap<>();
+//    private final ScheduledExecutorService scheduledExecutor = new ScheduledThreadPoolExecutor(1);
 
-  private CronetInterceptor(RequestResponseConverter converter) {
-    this.converter = checkNotNull(converter);
+    private CronetInterceptor(RequestResponseConverter converter) {
+        this.converter = checkNotNull(converter);
 
-    // TODO(danstahr): There's no other way to know if the call is canceled but polling
-    //  (https://github.com/square/okhttp/issues/7164).
-    ScheduledFuture<?> unusedFuture =
-        scheduledExecutor.scheduleAtFixedRate(
-            () -> {
-              Iterator<Entry<Call, UrlRequest>> activeCallsIterator =
-                  activeCalls.entrySet().iterator();
-
-              while (activeCallsIterator.hasNext()) {
-                try {
-                  Entry<Call, UrlRequest> activeCall = activeCallsIterator.next();
-                  if (activeCall.getKey().isCanceled()) {
-                    activeCallsIterator.remove();
-                    activeCall.getValue().cancel();
-                  }
-                } catch (RuntimeException e) {
-                  Log.w(TAG, "Unable to propagate cancellation status", e);
-                }
-              }
-            },
-            CANCELLATION_CHECK_INTERVAL_MILLIS,
-            CANCELLATION_CHECK_INTERVAL_MILLIS,
-            MILLISECONDS);
-  }
-
-  @Override
-  public Response intercept(Chain chain) throws IOException {
-    if (chain.call().isCanceled()) {
-      throw new IOException("Canceled");
-    }
-
-    Request request = chain.request();
-
-    CronetRequestAndOkHttpResponse requestAndOkHttpResponse =
-        converter.convert(request, chain.readTimeoutMillis(), chain.writeTimeoutMillis());
-
-    activeCalls.put(chain.call(), requestAndOkHttpResponse.getRequest());
-
-    try {
-      requestAndOkHttpResponse.getRequest().start();
-      return toInterceptorResponse(requestAndOkHttpResponse.getResponse(), chain.call());
-    } catch (RuntimeException | IOException e) {
-      // If the response is retrieved successfully the caller is responsible for closing
-      // the response, which will remove it from the active calls map.
-      activeCalls.remove(chain.call());
-      throw e;
-    }
-  }
-
-  /** Creates a {@link CronetInterceptor} builder. */
-  public static Builder newBuilder(CronetEngine cronetEngine) {
-    return new Builder(cronetEngine);
-  }
-
-  @Override
-  public void close() {
-    scheduledExecutor.shutdown();
-  }
-
-  /** A builder for {@link CronetInterceptor}. */
-  public static final class Builder
-      extends RequestResponseConverterBasedBuilder<Builder, CronetInterceptor> {
-
-    Builder(CronetEngine cronetEngine) {
-      super(cronetEngine, Builder.class);
-    }
-
-    /** Builds the interceptor. The same builder can be used to build multiple interceptors. */
-    @Override
-    CronetInterceptor build(RequestResponseConverter converter) {
-      return new CronetInterceptor(converter);
-    }
-  }
-
-  private Response toInterceptorResponse(Response response, Call call) {
-    checkNotNull(response.body());
-
-    if (response.body() instanceof CronetInterceptorResponseBody) {
-      return response;
-    }
-
-    return response
-        .newBuilder()
-        .body(new CronetInterceptorResponseBody(response.body(), call))
-        .build();
-  }
-
-  private class CronetInterceptorResponseBody extends CronetTransportResponseBody {
-    private final Call call;
-
-    private CronetInterceptorResponseBody(ResponseBody delegate, Call call) {
-      super(delegate);
-      this.call = call;
+        // TODO(danstahr): There's no other way to know if the call is canceled but polling
+        //  (https://github.com/square/okhttp/issues/7164).
+//        ScheduledFuture<?> unusedFuture =
+//                scheduledExecutor.scheduleAtFixedRate(
+//                        () -> {
+//                            Iterator<Entry<Call, UrlRequest>> activeCallsIterator =
+//                                    activeCalls.entrySet().iterator();
+//
+//                            while (activeCallsIterator.hasNext()) {
+//                                try {
+//                                    Entry<Call, UrlRequest> activeCall = activeCallsIterator.next();
+//                                    if (activeCall.getKey().isCanceled()) {
+//                                        activeCallsIterator.remove();
+//                                        activeCall.getValue().cancel();
+//                                    }
+//                                } catch (RuntimeException e) {
+//                                    Log.w(TAG, "Unable to propagate cancellation status", e);
+//                                }
+//                            }
+//                        },
+//                        CANCELLATION_CHECK_INTERVAL_MILLIS,
+//                        CANCELLATION_CHECK_INTERVAL_MILLIS,
+//                        MILLISECONDS);
     }
 
     @Override
-    void customCloseHook() {
-      activeCalls.remove(call);
+    public void canceled(@NonNull Call call) {
+        final var activeUrlRequest = activeCalls.remove(call);
+        if (activeUrlRequest != null) {
+            activeUrlRequest.cancel();
+        }
     }
-  }
+
+    @Override
+    public Response intercept(Chain chain) throws IOException {
+        if (chain.call().isCanceled()) {
+            throw new IOException("Canceled");
+        }
+
+        Request request = chain.request();
+
+        CronetRequestAndOkHttpResponse requestAndOkHttpResponse =
+                converter.convert(request, chain.readTimeoutMillis(), chain.writeTimeoutMillis());
+
+        activeCalls.put(chain.call(), requestAndOkHttpResponse.getRequest());
+
+        try {
+            requestAndOkHttpResponse.getRequest().start();
+            return toInterceptorResponse(requestAndOkHttpResponse.getResponse(), chain.call());
+        } catch (RuntimeException | IOException e) {
+            // If the response is retrieved successfully the caller is responsible for closing
+            // the response, which will remove it from the active calls map.
+            activeCalls.remove(chain.call());
+            throw e;
+        }
+    }
+
+    /**
+     * Creates a {@link CronetInterceptor} builder.
+     */
+    public static Builder newBuilder(CronetEngine cronetEngine) {
+        return new Builder(cronetEngine);
+    }
+
+//    @Override
+//    public void close() {
+//        scheduledExecutor.shutdown();
+//    }
+
+    /**
+     * A builder for {@link CronetInterceptor}.
+     */
+    public static final class Builder
+            extends RequestResponseConverterBasedBuilder<Builder, CronetInterceptor> {
+
+        Builder(CronetEngine cronetEngine) {
+            super(cronetEngine, Builder.class);
+        }
+
+        /**
+         * Builds the interceptor. The same builder can be used to build multiple interceptors.
+         */
+        @Override
+        CronetInterceptor build(RequestResponseConverter converter) {
+            return new CronetInterceptor(converter);
+        }
+    }
+
+    private Response toInterceptorResponse(Response response, Call call) {
+        checkNotNull(response.body());
+
+        if (response.body() instanceof CronetInterceptorResponseBody) {
+            return response;
+        }
+
+        return response
+                .newBuilder()
+                .body(new CronetInterceptorResponseBody(response.body(), call))
+                .build();
+    }
+
+    private class CronetInterceptorResponseBody extends CronetTransportResponseBody {
+        private final Call call;
+
+        private CronetInterceptorResponseBody(ResponseBody delegate, Call call) {
+            super(delegate);
+            this.call = call;
+        }
+
+        @Override
+        void customCloseHook() {
+            activeCalls.remove(call);
+        }
+    }
 }
