@@ -228,7 +228,8 @@ final class ResponseConverter {
       return Protocol.QUIC;
     } else if (negotiatedProtocol.contains("h3")) {
       // TODO(danstahr): Should be h3 for newer OkHttp
-      return Protocol.QUIC;
+//      return Protocol.QUIC;
+      return Protocol.HTTP_3;
     } else if (negotiatedProtocol.contains("spdy")) {
       return Protocol.HTTP_2;
     } else if (negotiatedProtocol.contains("h2")) {

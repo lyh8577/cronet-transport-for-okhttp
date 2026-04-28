@@ -32,10 +32,12 @@ android {
 }
 
 dependencies {
-    implementation(libs.cronet.okhttp)
+    implementation(project(":library"))
+//    implementation(libs.cronet.okhttp)
     implementation(libs.play.services.cronet)
     implementation(libs.okhttp)
     implementation(libs.guava)
     implementation(libs.jsr305)
     implementation(libs.cronet.api)
+    implementation(libs.cronet.embedded)
 }
