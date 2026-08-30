@@ -97,7 +97,7 @@ public final class CronetInterceptor extends EventListener implements Intercepto
                 }
 
                 CronetRequestAndOkHttpResponse requestAndOkHttpResponse =
-                        converter.convert(request, chain.readTimeoutMillis(), chain.writeTimeoutMillis());
+                        converter.convert(request, chain.getCookieJar(), chain.readTimeoutMillis(), chain.writeTimeoutMillis());
 
                 activeCalls.put(call, requestAndOkHttpResponse.getRequest());
 

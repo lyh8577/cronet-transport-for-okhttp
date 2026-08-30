@@ -47,21 +47,18 @@ final class RequestResponseConverter {
     private final ResponseConverter responseConverter;
     private final RequestBodyConverter requestBodyConverter;
     public final RedirectStrategy redirectStrategy;
-    private final CookieJar cookieJar;
 
     RequestResponseConverter(
             CronetEngine cronetEngine,
             Executor uploadDataProviderExecutor,
             RequestBodyConverter requestBodyConverter,
             ResponseConverter responseConverter,
-            RedirectStrategy redirectStrategy,
-            CookieJar cookieJar) {
+            RedirectStrategy redirectStrategy) {
         this.cronetEngine = cronetEngine;
         this.uploadDataProviderExecutor = uploadDataProviderExecutor;
         this.requestBodyConverter = requestBodyConverter;
         this.responseConverter = responseConverter;
         this.redirectStrategy = redirectStrategy;
-        this.cookieJar = cookieJar;
     }
 
     /**
@@ -83,7 +80,7 @@ final class RequestResponseConverter {
      * </pre>
      */
     CronetRequestAndOkHttpResponse convert(
-            Request okHttpRequest, int readTimeoutMillis, int writeTimeoutMillis) throws IOException {
+            Request okHttpRequest, CookieJar cookieJar, int readTimeoutMillis, int writeTimeoutMillis) throws IOException {
 
         OkHttpBridgeRequestCallback callback =
                 new OkHttpBridgeRequestCallback(readTimeoutMillis, redirectStrategy, cookieJar);
@@ -98,7 +95,7 @@ final class RequestResponseConverter {
 
         builder.setHttpMethod(okHttpRequest.method());
 
-        applyRequestHeadersAndCookies(builder, okHttpRequest);
+        applyRequestHeadersAndCookies(builder, okHttpRequest, cookieJar);
 
         RequestBody body = okHttpRequest.body();
         if (body != null) {
@@ -138,7 +135,7 @@ final class RequestResponseConverter {
                 builder.build(), createResponseSupplier(okHttpRequest, callback));
     }
 
-    private void applyRequestHeadersAndCookies(UrlRequest.Builder builder, Request request) {
+    private void applyRequestHeadersAndCookies(UrlRequest.Builder builder, Request request, CookieJar cookieJar) {
         final var headers = request.headers();
         for (int i = 0; i < headers.size(); i++) {
             final var name = headers.name(i);

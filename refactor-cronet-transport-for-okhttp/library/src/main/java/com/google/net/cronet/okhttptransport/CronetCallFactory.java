@@ -41,6 +41,7 @@ import kotlin.jvm.functions.Function0;
 import kotlin.reflect.KClass;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.CookieJar;
 import okhttp3.EventListener;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -131,7 +132,7 @@ public final class CronetCallFactory implements Call.Factory {
                 timeout.enter();
                 CronetRequestAndOkHttpResponse requestAndOkHttpResponse =
                         converter.convert(
-                                request(), motherFactory.readTimeoutMillis, motherFactory.writeTimeoutMillis);
+                                request(), CookieJar.NO_COOKIES, motherFactory.readTimeoutMillis, motherFactory.writeTimeoutMillis);
                 convertedRequestAndResponse.set(requestAndOkHttpResponse);
 
                 startRequestIfNotCanceled();
@@ -153,7 +154,7 @@ public final class CronetCallFactory implements Call.Factory {
                 evaluateExecutionPreconditions();
                 CronetRequestAndOkHttpResponse requestAndOkHttpResponse =
                         converter.convert(
-                                request(), motherFactory.readTimeoutMillis, motherFactory.writeTimeoutMillis);
+                                request(), CookieJar.NO_COOKIES, motherFactory.readTimeoutMillis, motherFactory.writeTimeoutMillis);
                 convertedRequestAndResponse.set(requestAndOkHttpResponse);
                 CronetCall call = this;
 

@@ -19,15 +19,11 @@ package com.google.net.cronet.okhttptransport;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import androidx.annotation.NonNull;
-
 import org.chromium.net.CronetEngine;
 import org.chromium.net.UploadDataProvider;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
-import okhttp3.CookieJar;
 
 abstract class RequestResponseConverterBasedBuilder<
         SubBuilderT extends RequestResponseConverterBasedBuilder<?, ? extends ObjectBeingBuiltT>,
@@ -39,8 +35,6 @@ abstract class RequestResponseConverterBasedBuilder<
     // Not setting the default straight away to lazy initialize the object if it ends up not being
     // used.
     private RedirectStrategy redirectStrategy = null;
-    @NonNull
-    private CookieJar cookieJar = CookieJar.NO_COOKIES;
     private final SubBuilderT castedThis;
 
     @SuppressWarnings("unchecked")
@@ -60,11 +54,6 @@ abstract class RequestResponseConverterBasedBuilder<
     public final SubBuilderT setUploadDataProviderExecutorSize(int size) {
         checkArgument(size > 0, "The number of threads must be positive!");
         uploadDataProviderExecutorSize = size;
-        return castedThis;
-    }
-
-    public final SubBuilderT setCookieJar(@NonNull CookieJar cookieJar) {
-        this.cookieJar = cookieJar;
         return castedThis;
     }
 
@@ -95,8 +84,7 @@ abstract class RequestResponseConverterBasedBuilder<
                         // otherwise deadlocks can occur.
                         RequestBodyConverterImpl.create(Executors.newCachedThreadPool()),
                         new ResponseConverter(),
-                        redirectStrategy,
-                        cookieJar);
+                        redirectStrategy);
 
         return build(converter);
     }
