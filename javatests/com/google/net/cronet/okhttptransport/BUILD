@@ -8,21 +8,12 @@ licenses(["notice"])
 android_library(
     name = "cronet_test_helpers",
     testonly = 1,
-    srcs = glob(
-        ["*.java"],
-        exclude = [
-            "*Test.java",
-            "CronetEngineTestAppRule.java",
-        ],
-    ),
+    srcs = [
+        "TestUtils.java",
+    ],
     deps = [
-        "@maven//:androidx_annotation_annotation",
-        "@maven//:androidx_test_core",
-        "@maven//:androidx_test_ext_junit",
-        "@maven//:com_google_guava_guava",  # ,:concurrent,
         "@maven//:com_google_truth_truth",
         "@maven//:com_squareup_okio_okio",
-        "@maven//:org_chromium_net_cronet_api",
     ],
 )
 
@@ -32,10 +23,13 @@ android_local_test(
         "RequestBodyConverterTest.java",
     ],
     manifest = "LocalTestManifest.xml",
+    manifest_values = {
+        "minSdkVersion": "24",
+        "targetSdkVersion": "36",
+    },
     deps = [
         ":cronet_test_helpers",
         "//:okhttp_cronet_transport",
-        "@maven//:androidx_annotation_annotation",
         "@maven//:androidx_test_ext_junit",
         "@maven//:com_google_guava_guava",  # :base,:concurrent,
         "@maven//:com_google_truth_truth",
@@ -53,6 +47,10 @@ android_local_test(
         "ResponseConverterTest.java",
     ],
     manifest = "LocalTestManifest.xml",
+    manifest_values = {
+        "minSdkVersion": "24",
+        "targetSdkVersion": "36",
+    },
     deps = [
         "//:okhttp_cronet_transport",
         "@maven//:androidx_test_ext_junit",
@@ -91,6 +89,10 @@ android_binary(
     testonly = 1,
     instruments = "//java/com/google/net/cronet/testing/testapp:embedded_cronet_test_app",
     manifest = "InstrumentationTestManifest.xml",
+    manifest_values = {
+        "minSdkVersion": "24",
+        "targetSdkVersion": "36",
+    },
     deps = [":cronet_interceptor_test_lib"],
 )
 
@@ -135,6 +137,10 @@ android_binary(
     testonly = 1,
     instruments = "//java/com/google/net/cronet/testing/testapp:embedded_cronet_test_app",
     manifest = "InstrumentationTestManifest.xml",
+    manifest_values = {
+        "minSdkVersion": "24",
+        "targetSdkVersion": "36",
+    },
     deps = [
         ":call_tests",
     ],
@@ -157,14 +163,6 @@ test(
 test(
     name = "LargeReadBenchmarkTest",
     size = "large",
-    additional_devices = [
-        # This test suite requires API 24+, so run it on the oldest supported version.
-        "google_24_x86_gms_stable",
-    ],
-    excluded_devices = [
-        # On API 23 all tests are skipped and the test runner throws with "No tests found to run".
-        "google_23_x86_gms_stable",
-    ],
     test_app = ":call_test_app",
 )
 
