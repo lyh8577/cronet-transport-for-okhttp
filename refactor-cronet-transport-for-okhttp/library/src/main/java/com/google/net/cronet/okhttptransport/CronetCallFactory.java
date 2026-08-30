@@ -24,7 +24,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -38,15 +37,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import kotlin.jvm.JvmClassMappingKt;
 import kotlin.jvm.functions.Function0;
 import kotlin.reflect.KClass;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.EventListener;
 import okhttp3.Request;
 import okhttp3.Response;
-import okhttp3.internal.Tags;
-import okhttp3.internal.TagsKt;
 import okio.AsyncTimeout;
 import okio.Timeout;
 
@@ -92,7 +89,6 @@ public final class CronetCallFactory implements Call.Factory {
     private static class CronetCall implements Call {
 
         private final Request okHttpRequest;
-        private final AtomicReference<Tags> tags;
         private final CronetCallFactory motherFactory;
         private final RequestResponseConverter converter;
         private final ExecutorService responseCallbackExecutor;
@@ -109,7 +105,6 @@ public final class CronetCallFactory implements Call.Factory {
                 RequestResponseConverter converter,
                 ExecutorService responseCallbackExecutor) {
             this.okHttpRequest = okHttpRequest;
-            this.tags = new AtomicReference<>(okHttpRequest.getTags$okhttp());
             this.motherFactory = motherFactory;
             this.converter = converter;
             this.responseCallbackExecutor = responseCallbackExecutor;
@@ -226,6 +221,26 @@ public final class CronetCallFactory implements Call.Factory {
         }
 
         @Override
+        public <T> T tag(KClass<T> type) {
+            throw new UnsupportedOperationException("OkHttp tags on CronetCallFactory are not supported");
+        }
+
+        @Override
+        public <T> T tag(Class<? extends T> type) {
+            throw new UnsupportedOperationException("OkHttp tags on CronetCallFactory are not supported");
+        }
+
+        @Override
+        public <T> T tag(KClass<T> type, Function0<? extends T> computeIfAbsent) {
+            throw new UnsupportedOperationException("OkHttp tags on CronetCallFactory are not supported");
+        }
+
+        @Override
+        public <T> T tag(Class<T> type, Function0<? extends T> computeIfAbsent) {
+            throw new UnsupportedOperationException("OkHttp tags on CronetCallFactory are not supported");
+        }
+
+        @Override
         public Timeout timeout() {
             return timeout;
         }
@@ -270,28 +285,9 @@ public final class CronetCallFactory implements Call.Factory {
             }
         }
 
-        @Nullable
         @Override
-        public <T> T tag(@NonNull KClass<T> kClass) {
-            return JvmClassMappingKt.getJavaClass(kClass).cast(tags.get().get(kClass));
-        }
-
-        @Nullable
-        @Override
-        public <T> T tag(@NonNull Class<? extends T> aClass) {
-            return aClass.cast(tags.get().get(JvmClassMappingKt.getKotlinClass(aClass)));
-        }
-
-        @NonNull
-        @Override
-        public <T> T tag(@NonNull KClass<T> kClass, @NonNull Function0<? extends T> function0) {
-            return TagsKt.computeIfAbsent(tags, kClass, function0);
-        }
-
-        @NonNull
-        @Override
-        public <T> T tag(@NonNull Class<T> aClass, @NonNull Function0<? extends T> function0) {
-            return TagsKt.computeIfAbsent(tags, JvmClassMappingKt.getKotlinClass(aClass), function0);
+        public void addEventListener(@NonNull EventListener eventListener) {
+            throw new UnsupportedOperationException("Call.addEventListener on CronetCallFactory are not supported");
         }
     }
 
@@ -320,7 +316,7 @@ public final class CronetCallFactory implements Call.Factory {
         private ExecutorService callbackExecutorService = null;
 
         Builder(CronetEngine cronetEngine) {
-            super(cronetEngine, CronetCallFactory.Builder.class);
+            super(cronetEngine, Builder.class);
         }
 
         public Builder setReadTimeoutMillis(int readTimeoutMillis) {

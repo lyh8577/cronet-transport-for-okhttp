@@ -5,13 +5,13 @@ plugins {
 android {
     namespace = "com.google.samples.cronet.okhttptransport"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     defaultConfig {
         applicationId = "com.google.samples.cronet.okhttptransport"
-        minSdk = 23
-        targetSdk = 36
+        minSdk = 24
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
     }
@@ -38,6 +38,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.guava)
     implementation(libs.jsr305)
-    implementation(libs.cronet.api)
-    implementation(libs.cronet.embedded)
+    implementation(libs.cronet)
+    implementation(libs.cronet.bundled)
 }

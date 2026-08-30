@@ -99,8 +99,7 @@ final class HttpClientHolder {
 
                                     CronetInterceptor cronetInterceptor =
                                             CronetInterceptor.newBuilder(engine).build();
-
-                                    return createOkHttpBuilder().addInterceptor(cronetInterceptor).eventListener(cronetInterceptor).build();
+                                    return createOkHttpBuilder().addInterceptor(cronetInterceptor).build();
                                 })
                         .addOnCompleteListener(
                                 task -> {

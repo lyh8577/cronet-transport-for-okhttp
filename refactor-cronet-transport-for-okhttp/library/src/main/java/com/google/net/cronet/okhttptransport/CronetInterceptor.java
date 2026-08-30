@@ -42,7 +42,6 @@ import okhttp3.EventListener;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.internal.UnreadableResponseBodyKt;
@@ -65,41 +64,13 @@ import okhttp3.internal.http.HttpMethod;
  *       OkHttp's architecture. TODO(danstahr): add a concrete list).
  * </ol>
  */
-public final class CronetInterceptor extends EventListener implements Interceptor/*, AutoCloseable*/ {
+public final class CronetInterceptor extends EventListener implements Interceptor {
     private static final String TAG = "CronetInterceptor";
-
-//    private static final int CANCELLATION_CHECK_INTERVAL_MILLIS = 500;
-
     private final RequestResponseConverter converter;
     private final Map<Call, UrlRequest> activeCalls = new ConcurrentHashMap<>();
-//    private final ScheduledExecutorService scheduledExecutor = new ScheduledThreadPoolExecutor(1);
 
     private CronetInterceptor(RequestResponseConverter converter) {
         this.converter = checkNotNull(converter);
-
-        // TODO(danstahr): There's no other way to know if the call is canceled but polling
-        //  (https://github.com/square/okhttp/issues/7164).
-//        ScheduledFuture<?> unusedFuture =
-//                scheduledExecutor.scheduleAtFixedRate(
-//                        () -> {
-//                            Iterator<Entry<Call, UrlRequest>> activeCallsIterator =
-//                                    activeCalls.entrySet().iterator();
-//
-//                            while (activeCallsIterator.hasNext()) {
-//                                try {
-//                                    Entry<Call, UrlRequest> activeCall = activeCallsIterator.next();
-//                                    if (activeCall.getKey().isCanceled()) {
-//                                        activeCallsIterator.remove();
-//                                        activeCall.getValue().cancel();
-//                                    }
-//                                } catch (RuntimeException e) {
-//                                    Log.w(TAG, "Unable to propagate cancellation status", e);
-//                                }
-//                            }
-//                        },
-//                        CANCELLATION_CHECK_INTERVAL_MILLIS,
-//                        CANCELLATION_CHECK_INTERVAL_MILLIS,
-//                        MILLISECONDS);
     }
 
     @Override
@@ -113,6 +84,8 @@ public final class CronetInterceptor extends EventListener implements Intercepto
     @Override
     public Response intercept(Chain chain) throws IOException {
         final var call = chain.call();
+        call.addEventListener(this);
+
         Request request = chain.request();
         Response priorResponse = null;
         var followUpCount = 0;
@@ -199,24 +172,13 @@ public final class CronetInterceptor extends EventListener implements Intercepto
         final var requestBuilder = userResponse.request().newBuilder();
         if (HttpMethod.permitsRequestBody(method)) {
             final var responseCode = userResponse.code();
-            final var maintainBody =
-                    HttpMethod.INSTANCE.redirectsWithBody(method) ||
-                            responseCode == HTTP_PERM_REDIRECT ||
-                            responseCode == HTTP_TEMP_REDIRECT;
-            if (HttpMethod.INSTANCE.redirectsToGet(method) && responseCode != HTTP_PERM_REDIRECT && responseCode != HTTP_TEMP_REDIRECT) {
+            if (HttpMethod.INSTANCE.redirectsToGet(method, responseCode)) {
                 requestBuilder.method("GET", null);
-            } else {
-                final RequestBody requestBody;
-                if (maintainBody)
-                    requestBody = userResponse.request().body();
-                else
-                    requestBody = null;
-                requestBuilder.method(method, requestBody);
-            }
-            if (!maintainBody) {
                 requestBuilder.removeHeader("Transfer-Encoding");
                 requestBuilder.removeHeader("Content-Length");
                 requestBuilder.removeHeader("Content-Type");
+            } else {
+                requestBuilder.method(method, userResponse.request().body());
             }
         }
 
@@ -247,11 +209,6 @@ public final class CronetInterceptor extends EventListener implements Intercepto
     public static Builder newBuilder(CronetEngine cronetEngine) {
         return new Builder(cronetEngine);
     }
-
-//    @Override
-//    public void close() {
-//        scheduledExecutor.shutdown();
-//    }
 
     /**
      * A builder for {@link CronetInterceptor}.

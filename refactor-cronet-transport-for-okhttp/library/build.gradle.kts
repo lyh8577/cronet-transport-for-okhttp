@@ -6,11 +6,11 @@ plugins {
 android {
     namespace = "com.google.net.cronet.okhttptransport"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     defaultConfig {
-        minSdk = 23
+        minSdk = 24
 
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -37,7 +37,7 @@ dependencies {
     implementation(libs.androidx.annotation)
     implementation(libs.jsr305)
     implementation(libs.guava)
-    implementation(libs.cronet.api)
+    implementation(libs.cronet)
 }
 
 publishing {
@@ -54,7 +54,7 @@ publishing {
 }
 
 mavenPublishing {
-    coordinates("com.github.yhong.android", "cronet-okhttp", "0.0.1")
+    coordinates("com.github.yhong.android", "cronet-okhttp", "0.0.2")
 
     // the following is optional
 
