@@ -1,3 +1,6 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.JavadocJar
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.gradleMavenPublish)
@@ -47,13 +50,14 @@ publishing {
             url = uri("https://maven.pkg.github.com/lyh8577/pkgrepo")
             credentials {
                 username = "lyh8577"
-                password = System.getenv("TOKEN_GH")
+                password = System.getenv("GH_TOKEN")
             }
         }
     }
 }
 
 mavenPublishing {
+    configure(AndroidSingleVariantLibrary(JavadocJar.None()))
     coordinates("com.github.yhong.android", "cronet-okhttp", "0.0.2")
 
     // the following is optional
