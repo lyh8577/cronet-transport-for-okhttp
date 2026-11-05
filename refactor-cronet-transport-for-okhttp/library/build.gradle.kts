@@ -58,7 +58,7 @@ publishing {
 
 mavenPublishing {
     configure(AndroidSingleVariantLibrary(JavadocJar.None()))
-    coordinates("com.github.yhong.android", "cronet-okhttp", "0.0.2")
+    coordinates("com.github.yhong.android", "cronet-okhttp", "0.0.3")
 
     // the following is optional
 

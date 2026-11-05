@@ -26,6 +26,7 @@ import org.chromium.net.UrlRequest;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import okhttp3.CookieJar;
 import okhttp3.MediaType;
@@ -33,33 +34,31 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-/**
- * Converts OkHttp requests to Cronet requests.
- */
+/** Converts OkHttp requests to Cronet requests. */
 final class RequestResponseConverter {
-    private static final String CONTENT_LENGTH_HEADER_NAME = "Content-Length";
-    private static final String CONTENT_TYPE_HEADER_NAME = "Content-Type";
-    private static final String CONTENT_TYPE_HEADER_DEFAULT_VALUE = "application/octet-stream";
-    private static final String TAG = "CronetTransportForOkHttp";
+  private static final String CONTENT_LENGTH_HEADER_NAME = "Content-Length";
+  private static final String CONTENT_TYPE_HEADER_NAME = "Content-Type";
+  private static final String CONTENT_TYPE_HEADER_DEFAULT_VALUE = "application/octet-stream";
+  private static final String TAG = "CronetTransportForOkHttp";
 
-    private final CronetEngine cronetEngine;
-    private final Executor uploadDataProviderExecutor;
-    private final ResponseConverter responseConverter;
-    private final RequestBodyConverter requestBodyConverter;
-    public final RedirectStrategy redirectStrategy;
+  private final CronetEngine cronetEngine;
+  private final Executor uploadDataProviderExecutor;
+  private final ExecutorService requestBodyReaderExecutor;
+  private final ResponseConverter responseConverter;
+  public final RedirectStrategy redirectStrategy;
 
-    RequestResponseConverter(
-            CronetEngine cronetEngine,
-            Executor uploadDataProviderExecutor,
-            RequestBodyConverter requestBodyConverter,
-            ResponseConverter responseConverter,
-            RedirectStrategy redirectStrategy) {
-        this.cronetEngine = cronetEngine;
-        this.uploadDataProviderExecutor = uploadDataProviderExecutor;
-        this.requestBodyConverter = requestBodyConverter;
-        this.responseConverter = responseConverter;
-        this.redirectStrategy = redirectStrategy;
-    }
+  RequestResponseConverter(
+      CronetEngine cronetEngine,
+      Executor uploadDataProviderExecutor,
+      ExecutorService requestBodyReaderExecutor,
+      ResponseConverter responseConverter,
+      RedirectStrategy redirectStrategy) {
+    this.cronetEngine = cronetEngine;
+    this.uploadDataProviderExecutor = uploadDataProviderExecutor;
+    this.requestBodyReaderExecutor = requestBodyReaderExecutor;
+    this.responseConverter = responseConverter;
+    this.redirectStrategy = redirectStrategy;
+  }
 
     /**
      * Converts OkHttp's {@link Request} to a corresponding Cronet's {@link UrlRequest}.
@@ -125,15 +124,15 @@ final class RequestResponseConverter {
                     builder.addHeader(CONTENT_TYPE_HEADER_NAME, CONTENT_TYPE_HEADER_DEFAULT_VALUE);
                 }
 
-                builder.setUploadDataProvider(
-                        requestBodyConverter.convertRequestBody(body, writeTimeoutMillis),
-                        uploadDataProviderExecutor);
-            }
-        }
-
-        return new CronetRequestAndOkHttpResponse(
-                builder.build(), createResponseSupplier(okHttpRequest, callback));
+        builder.setUploadDataProvider(
+            new RequestBodyConverter(body, requestBodyReaderExecutor, writeTimeoutMillis),
+            uploadDataProviderExecutor);
+      }
     }
+
+    return new CronetRequestAndOkHttpResponse(
+        builder.build(), createResponseSupplier(okHttpRequest, callback));
+  }
 
     private void applyRequestHeadersAndCookies(UrlRequest.Builder builder, Request request, CookieJar cookieJar) {
         final var headers = request.headers();
@@ -156,44 +155,40 @@ final class RequestResponseConverter {
                 return responseConverter.toResponse(request, callback);
             }
 
-            @Override
-            public ListenableFuture<Response> getResponseFuture() {
-                return responseConverter.toResponseAsync(request, callback);
-            }
-        };
+      @Override
+      public ListenableFuture<Response> getResponseFuture() {
+        return responseConverter.toResponseAsync(request, callback);
+      }
+    };
+  }
+
+  /** A {@link Future} like holder for OkHttp's {@link Response}. */
+  private interface ResponseSupplier {
+    Response getResponse() throws IOException;
+
+    ListenableFuture<Response> getResponseFuture();
+  }
+
+  /** A simple data class for bundling Cronet request and OkHttp response. */
+  static final class CronetRequestAndOkHttpResponse {
+    private final UrlRequest request;
+    private final ResponseSupplier responseSupplier;
+
+    CronetRequestAndOkHttpResponse(UrlRequest request, ResponseSupplier responseSupplier) {
+      this.request = request;
+      this.responseSupplier = responseSupplier;
     }
 
-    /**
-     * A {@link Future} like holder for OkHttp's {@link Response}.
-     */
-    private interface ResponseSupplier {
-        Response getResponse() throws IOException;
-
-        ListenableFuture<Response> getResponseFuture();
+    public UrlRequest getRequest() {
+      return request;
     }
 
-    /**
-     * A simple data class for bundling Cronet request and OkHttp response.
-     */
-    static final class CronetRequestAndOkHttpResponse {
-        private final UrlRequest request;
-        private final ResponseSupplier responseSupplier;
-
-        CronetRequestAndOkHttpResponse(UrlRequest request, ResponseSupplier responseSupplier) {
-            this.request = request;
-            this.responseSupplier = responseSupplier;
-        }
-
-        public UrlRequest getRequest() {
-            return request;
-        }
-
-        public Response getResponse() throws IOException {
-            return responseSupplier.getResponse();
-        }
-
-        public ListenableFuture<Response> getResponseAsync() {
-            return responseSupplier.getResponseFuture();
-        }
+    public Response getResponse() throws IOException {
+      return responseSupplier.getResponse();
     }
+
+    public ListenableFuture<Response> getResponseAsync() {
+      return responseSupplier.getResponseFuture();
+    }
+  }
 }

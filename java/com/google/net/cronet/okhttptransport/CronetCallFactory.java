@@ -34,6 +34,7 @@ import kotlin.jvm.functions.Function0;
 import kotlin.reflect.KClass;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.EventListener;
 import okhttp3.Request;
 import okhttp3.Response;
 import okio.AsyncTimeout;
@@ -234,6 +235,11 @@ public final class CronetCallFactory implements Call.Factory {
     @Override
     public Timeout timeout() {
       return timeout;
+    }
+
+    @Override
+    public void addEventListener(EventListener eventListener) {
+      // No-op.
     }
 
     private String toLoggableString() {

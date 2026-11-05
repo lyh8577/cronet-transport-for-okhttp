@@ -61,7 +61,7 @@ import okhttp3.internal.http.HttpMethod;
  *   <li>The entirety of OkHttp core is bypassed. This includes caching configuration and network
  *       interceptors.
  *   <li>Some response fields are not being populated due to mismatches between Cronet's and
- *       OkHttp's architecture. TODO(danstahr): add a concrete list).
+ *       OkHttp's architecture.
  * </ol>
  */
 public final class CronetInterceptor extends EventListener implements Interceptor {
@@ -216,43 +216,41 @@ public final class CronetInterceptor extends EventListener implements Intercepto
     public static final class Builder
             extends RequestResponseConverterBasedBuilder<Builder, CronetInterceptor> {
 
-        Builder(CronetEngine cronetEngine) {
-            super(cronetEngine, Builder.class);
-        }
-
-        /**
-         * Builds the interceptor. The same builder can be used to build multiple interceptors.
-         */
-        @Override
-        CronetInterceptor build(RequestResponseConverter converter) {
-            return new CronetInterceptor(converter);
-        }
+    Builder(CronetEngine cronetEngine) {
+      super(cronetEngine, Builder.class);
     }
 
-    private Response toInterceptorResponse(Response response, Call call) {
-        checkNotNull(response.body());
+    /** Builds the interceptor. The same builder can be used to build multiple interceptors. */
+    @Override
+    CronetInterceptor build(RequestResponseConverter converter) {
+      return new CronetInterceptor(converter);
+    }
+  }
 
-        if (response.body() instanceof CronetInterceptorResponseBody) {
-            return response;
-        }
+  private Response toInterceptorResponse(Response response, Call call) {
+    checkNotNull(response.body());
 
-        return response
-                .newBuilder()
-                .body(new CronetInterceptorResponseBody(response.body(), call))
-                .build();
+    if (response.body() instanceof CronetInterceptorResponseBody) {
+      return response;
     }
 
-    private class CronetInterceptorResponseBody extends CronetTransportResponseBody {
-        private final Call call;
+    return response
+        .newBuilder()
+        .body(new CronetInterceptorResponseBody(response.body(), call))
+        .build();
+  }
 
-        private CronetInterceptorResponseBody(ResponseBody delegate, Call call) {
-            super(delegate);
-            this.call = call;
-        }
+  private class CronetInterceptorResponseBody extends CronetTransportResponseBody {
+    private final Call call;
 
-        @Override
-        void customCloseHook() {
-            activeCalls.remove(call);
-        }
+    private CronetInterceptorResponseBody(ResponseBody delegate, Call call) {
+      super(delegate);
+      this.call = call;
     }
+
+    @Override
+    void customCloseHook() {
+      activeCalls.remove(call);
+    }
+  }
 }
